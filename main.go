@@ -16,24 +16,21 @@ package main
 
 import (
 	"archive/zip"
-	"fmt"
 	"io"
-	"net/http"
-
-	"os"
-
-	// "log"
 	"io/ioutil"
+	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 
-	// "fyne.io/fyne/app"
+	"launch/data"
 	"launch/resources"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -42,24 +39,31 @@ import (
 func main() {
 
 	App := app.New()
-	mainWindow := App.NewWindow("LF Launcher")
+	mainWindow := App.NewWindow(data.WINDOW_NAME)
 	mainWindow.Resize(fyne.NewSize(700, 270))
 
-	img := canvas.NewImageFromResource(fyne.NewStaticResource("bg.jpg", resources.ResourceBgJpg.StaticContent))
+	// Изображение преобразовано в байты, чтобы не использовать лишний ресурс
+	img := canvas.NewImageFromResource(fyne.NewStaticResource(data.IMG_NAME, resources.ResourceBgJpg.StaticContent))
 
-	progress := widget.NewProgressBar()
-	textLabel := widget.NewLabel("LastFrontier.ru...")
+	// Прогрессбар с инфо-текстом
+	progressBar := widget.NewProgressBar()
+	progressText := widget.NewLabel(data.PROGRESSBAR_TITLE_IDL)
 	stack := fyne.NewContainerWithLayout(layout.NewMaxLayout(),
-		progress,
-		textLabel,
+		progressBar,
+		progressText,
 	)
 	stack.Resize(fyne.NewSize(300, 50))
-	textLabel.Alignment = fyne.TextAlignCenter
-	progress.SetValue(0.5)
+	progressText.Alignment = fyne.TextAlignCenter
 
-	startBtns := container.NewGridWithColumns(2, widget.NewButton("OpenGL ver.", func() { startGameOpenGl() }), widget.NewButton("Update", func() { startUpdate() }))
+	// Кнопки запуска Клиента на OpenGL и Запуска Обновления
+	startBtns := container.NewGridWithColumns(2, widget.NewButton(data.BTN_START_OGL_TITLE,
+		func() { startGameOpenGl(&mainWindow) }),
+		widget.NewButton(data.BTN_UPDATE_TITLE,
+			func() { startUpdate(progressBar, progressText, &mainWindow) }))
 	manageZone := container.NewGridWithRows(2, startBtns, stack)
-	bottn := container.NewGridWithRows(2, widget.NewButton("START GAME", func() { startGameDirectX() }), manageZone)
+
+	// Нижний сегмент окна с основной кнопкой Запуска клиента под DirectX
+	bottn := container.NewGridWithRows(2, widget.NewButton(data.BTN_START_TITLE, func() { startGameDirectX(&mainWindow) }), manageZone)
 	mainWindow.SetContent(container.NewGridWithRows(2, img, bottn))
 
 	mainWindow.Show()
@@ -68,135 +72,134 @@ func main() {
 
 }
 
-func startUpdate() {
-	fmt.Println("Start Update")
-	/* downloadNewClient()
-	toTemp()
-	replaceTemp()
-	startGameDirectX() */
+func startUpdate(progress *widget.ProgressBar, progressText *widget.Label, mainWindow *fyne.Window) {
+	downloadNewClient(progress, progressText, mainWindow)
+	toTemp(progress, progressText, mainWindow)
+	replaceTemp(progress, progressText, mainWindow)
+	startGameDirectX(mainWindow)
 }
 
-func startGameDirectX() {
-	// получаем путь к текущей директории
+func startGameDirectX(w *fyne.Window) {
 	currentDir, err := os.Getwd()
 	if err != nil {
-		fmt.Println("Ошибка при получении текущей директории:", err)
+		showError("16", err, w)
 		return
 	}
 
-	// собираем относительный путь к исполняемому файлу
-	exePath := filepath.Join(currentDir, "LastFrontier.exe")
+	exePath := filepath.Join(currentDir, data.EXE_NAME_MAIN)
 
-	// запускаем исполняемый файл
 	cmd := exec.Command(exePath)
 	err = cmd.Run()
 	if err != nil {
-		fmt.Println("Ошибка при запуске приложения:", err)
+		showError("17", err, w)
 		return
 	}
 }
 
-func startGameOpenGl() {
-	// получаем путь к текущей директории
+func startGameOpenGl(w *fyne.Window) {
 	currentDir, err := os.Getwd()
 	if err != nil {
-		fmt.Println("Ошибка при получении текущей директории:", err)
+		showError("14", err, w)
 		return
 	}
 
-	// собираем относительный путь к исполняемому файлу
-	exePath := filepath.Join(currentDir, "LastFrontier_OpenGL.exe")
+	exePath := filepath.Join(currentDir, data.EXE_OPENGL_NAME)
 
-	// запускаем исполняемый файл
 	cmd := exec.Command(exePath)
 	err = cmd.Run()
 	if err != nil {
-		fmt.Println("Ошибка при запуске приложения:", err)
+		showError("15", err, w)
 		return
 	}
 }
 
-func replaceTemp() {
-	// Получаем текущую директорию
+func replaceTemp(progress *widget.ProgressBar, progressText *widget.Label, w *fyne.Window) {
+	progress.SetValue(0.8)
+	progressText.SetText(data.PROGRESSBAR_TITLE_TOEND)
+
 	dir, err := os.Getwd()
 	if err != nil {
-		panic(err)
+		showError("9", err, w)
 	}
 
-	// Путь к папке temp
 	tempDir := filepath.Join(dir, "temp")
 
-	// Получаем список файлов и папок в папке temp
 	files, err := ioutil.ReadDir(tempDir)
 	if err != nil {
-		panic(err)
+		showError("10", err, w)
 	}
 
-	// Перебираем все файлы и папки в папке temp
 	for _, file := range files {
-		// Путь к файлу или папке в папке temp
 		src := filepath.Join(tempDir, file.Name())
-
-		// Путь к файлу или папке в текущей директории
 		dst := filepath.Join(dir, file.Name())
 
-		// Если файл или папка с таким именем уже есть в текущей директории, удаляем его
 		if _, err := os.Stat(dst); err == nil {
 			err = os.RemoveAll(dst)
 			if err != nil {
-				panic(err)
+				showError("11", err, w)
 			}
 		}
 
-		// Перемещаем файл или папку в текущую директорию
 		err = os.Rename(src, dst)
 		if err != nil {
-			panic(err)
+			showError("12", err, w)
 		}
 	}
 
-	fmt.Println("Все файлы из папки temp успешно перемещены в текущую директорию.")
+	progress.SetValue(0.9)
 
-	// Удаляем папку temp
 	err = os.RemoveAll(tempDir)
 	if err != nil {
-		panic(err)
+		showError("13", err, w)
 	}
+
+	progress.SetValue(1)
+	progressText.SetText(data.PROGRESSBAR_TITLE_END)
 }
 
-func toTemp() {
+func toTemp(progress *widget.ProgressBar, progressText *widget.Label, w *fyne.Window) {
+	progress.SetValue(0.6)
+	progressText.SetText(data.PROGRESSBAR_TITLE_UNPACK)
+
 	dir, err := os.Getwd()
 	if err != nil {
-		panic(err)
+		showError("4", err, w)
 	}
 
 	tempDir := filepath.Join(dir, "temp")
 	if err := os.Mkdir(tempDir, 0755); err != nil {
-		panic(err)
+		showError("5", err, w)
 	}
 
 	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
-		}
+		} // end if
 
-		if !info.IsDir() && filepath.Ext(path) == ".zip" {
-			if err := unzip(path, tempDir); err != nil {
+		if !info.IsDir() && filepath.Ext(path) == ".zip" { //  * if
+
+			if err := unzip(path, tempDir); err != nil { // ** if
 				return err
-			}
-		}
+			} // ** end if
+
+		} // * end if
 
 		return nil
 	})
-
 	if err != nil {
-		panic(err)
+		showError("6", err, w)
 	}
 
-	err = os.Remove("1233.zip")
+	err = os.Remove(data.NAME_ARCH)
 	if err != nil {
-		panic(err)
+		showError("7", err, w)
 	}
+	err = os.Remove(data.NAME_ARCH_OTHER)
+	if err != nil {
+		showError("8", err, w)
+	}
+
+	progress.SetValue(0.7)
 }
 
 func unzip(src, dest string) error {
@@ -239,27 +242,33 @@ func unzip(src, dest string) error {
 	return nil
 }
 
-func downloadNewClient() {
-	fileURL := "https://drive.google.com/u/0/uc?id=1AM9xNOXtM5ge0gnHPC5-UjpP-9TJfKil&export=download&confirm=no_antivirus"
+func downloadNewClient(progress *widget.ProgressBar, progressText *widget.Label, w *fyne.Window) {
+	fileURL := data.FILE_URL
+	fileName := data.NAME_ARCH
 
-	fileName := "LF-Client.zip"
+	progress.SetValue(0)
+	progressText.SetText(data.PROGRESSBAR_TITLE_DOWNLOAD)
 
 	response, err := http.Get(fileURL)
 	if err != nil {
-		panic(err)
+		showError("1", err, w)
 	}
 	defer response.Body.Close()
 
 	file, err := os.Create(fileName)
 	if err != nil {
-		panic(err)
+		showError("2", err, w)
 	}
 	defer file.Close()
 
 	_, err = io.Copy(file, response.Body)
 	if err != nil {
-		panic(err)
+		showError("3", err, w)
 	}
 
-	fmt.Printf("Файл %s успешно загружен\n", fileName)
+	progress.SetValue(0.5)
+}
+
+func showError(errText string, err error, w *fyne.Window) {
+	dialog.ShowInformation("Oops", "Ошибка "+errText+"\n"+err.Error(), *w)
 }
