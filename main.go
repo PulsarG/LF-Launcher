@@ -16,7 +16,10 @@ package main
 
 import (
 	"archive/zip"
+	"fmt"
+	"image/color"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -73,10 +76,16 @@ func main() {
 }
 
 func startUpdate(progress *widget.ProgressBar, progressText *widget.Label, mainWindow *fyne.Window) {
-	downloadNewClient(progress, progressText, mainWindow)
-	toTemp(progress, progressText, mainWindow)
-	replaceTemp(progress, progressText, mainWindow)
-	startGameDirectX(mainWindow)
+	wtColor := color.RGBA{255, 255, 255, 255}
+	title := canvas.NewText("Для успешного обновления необходимо минимум 2 ГБ свободного места", wtColor)
+	dialog.ShowCustomConfirm("Внимание", "Обновить", "Отмена", title, func(b bool) {
+		if b {
+			downloadNewClient(progress, progressText, mainWindow)
+			toTemp(progress, progressText, mainWindow)
+			replaceTemp(progress, progressText, mainWindow)
+			// startGameDirectX(mainWindow)
+		} // end if
+	}, *mainWindow) // end dialog
 }
 
 func startGameDirectX(w *fyne.Window) {
@@ -114,7 +123,7 @@ func startGameOpenGl(w *fyne.Window) {
 }
 
 func replaceTemp(progress *widget.ProgressBar, progressText *widget.Label, w *fyne.Window) {
-	progress.SetValue(0.8)
+	progress.SetValue(0.7)
 	progressText.SetText(data.PROGRESSBAR_TITLE_TOEND)
 
 	dir, err := os.Getwd()
@@ -129,6 +138,14 @@ func replaceTemp(progress *widget.ProgressBar, progressText *widget.Label, w *fy
 		showError("10", err, w)
 	}
 
+	// Т.к. распаковка архива вынимает ВСЕ файлы
+	// то необходимо перед перемещением нужных файлов (архивы в директории Resources)
+	// удалить те, что не нужны
+	cleaningTemp(dir, tempDir, &files, w)
+
+	progress.SetValue(0.8)
+
+	// Перемещаем новые файлы клиента из temp
 	for _, file := range files {
 		src := filepath.Join(tempDir, file.Name())
 		dst := filepath.Join(dir, file.Name())
@@ -138,13 +155,13 @@ func replaceTemp(progress *widget.ProgressBar, progressText *widget.Label, w *fy
 			if err != nil {
 				showError("11", err, w)
 			}
-		}
+		} // end if
 
 		err = os.Rename(src, dst)
 		if err != nil {
-			showError("12", err, w)
+			continue
 		}
-	}
+	} // end for
 
 	progress.SetValue(0.9)
 
@@ -155,6 +172,19 @@ func replaceTemp(progress *widget.ProgressBar, progressText *widget.Label, w *fy
 
 	progress.SetValue(1)
 	progressText.SetText(data.PROGRESSBAR_TITLE_END)
+}
+
+func cleaningTemp(dir string, tempDir string, files *[]fs.FileInfo, w *fyne.Window) {
+	for _, file := range *files { // for
+		path := fmt.Sprintf("%s/%s", tempDir, file.Name())
+
+		if (file.Name() != data.EXE_OPENGL_NAME) && (file.Name() != data.EXE_NAME_MAIN) && (file.Name() != data.FILE_TEXT) && (file.Name() != data.RESOURCES_DIR_NAME) {
+			err := os.RemoveAll(path)
+			if err != nil { // ** if
+				showError("19", err, w)
+			} // ** end if
+		} // * end if
+	} // end for
 }
 
 func toTemp(progress *widget.ProgressBar, progressText *widget.Label, w *fyne.Window) {
@@ -193,10 +223,6 @@ func toTemp(progress *widget.ProgressBar, progressText *widget.Label, w *fyne.Wi
 	err = os.Remove(data.NAME_ARCH)
 	if err != nil {
 		showError("7", err, w)
-	}
-	err = os.Remove(data.NAME_ARCH_OTHER)
-	if err != nil {
-		showError("8", err, w)
 	}
 
 	progress.SetValue(0.7)
@@ -243,23 +269,25 @@ func unzip(src, dest string) error {
 }
 
 func downloadNewClient(progress *widget.ProgressBar, progressText *widget.Label, w *fyne.Window) {
-	fileURL := data.FILE_URL
-	fileName := data.NAME_ARCH
+	// fileURL := data.FILE_URL
+	// fileName := data.NAME_ARCH
 
 	progress.SetValue(0)
 	progressText.SetText(data.PROGRESSBAR_TITLE_DOWNLOAD)
 
-	response, err := http.Get(fileURL)
+	response, err := http.Get(data.FILE_URL)
 	if err != nil {
 		showError("1", err, w)
 	}
 	defer response.Body.Close()
+	progress.SetValue(0.1)
 
-	file, err := os.Create(fileName)
+	file, err := os.Create(data.NAME_ARCH)
 	if err != nil {
 		showError("2", err, w)
 	}
 	defer file.Close()
+	progress.SetValue(0.3)
 
 	_, err = io.Copy(file, response.Body)
 	if err != nil {

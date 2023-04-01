@@ -12,6 +12,9 @@ const (
 	EXE_NAME_MAIN = "LastFrontier.exe"
 	EXE_OPENGL_NAME = "LastFrontier_OpenGL.exe"
 
+	FILE_TEXT = "LastFrontier.txt"
+	RESOURCES_DIR_NAME = "Resources"
+
 	BTN_START_TITLE = "START GAME"
 	BTN_START_OGL_TITLE = "Start OpenGL ver."
 	BTN_UPDATE_TITLE = "Update"
