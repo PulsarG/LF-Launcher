@@ -1,3 +1,17 @@
+/*
+__      _________      __
+\ \    / /_   _\ \    / /\
+ \ \  / /  | |  \ \  / /  \
+  \ \/ /   | |   \ \/ / /\ \
+   \  /   _| |_   \  / ____ \
+ _  \/   |_____|  _\/_/    \_\     _   _
+| | | |          |  _ \           | | | |
+| |_| |__   ___  | |_) | ___  __ _| |_| | ___  ___
+| __| '_ \ / _ \ |  _ < / _ \/ _` | __| |/ _ \/ __|
+| |_| | | |  __/ | |_) |  __/ (_| | |_| |  __/\__ \
+ \__|_| |_|\___| |____/ \___|\__,_|\__|_|\___||___/
+*/
+
 package main
 
 import (
@@ -6,18 +20,45 @@ import (
 	"io"
 	"net/http"
 	"os"
+
 	// "log"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
+
+	// "fyne.io/fyne/app"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
+	"fyne.io/fyne/v2/theme"
 )
 
 func main() {
+
+	App := app.New()
+	mainWindow := App.NewWindow("LF Launcher")
+	mainWindow.Resize(fyne.NewSize(700,300))
+
+	img := canvas.NewImageFromFile("bg.jpg")
+
+	progress := widget.NewProgressBar()
+	startBtns := container.NewGridWithColumns(2, widget.NewButton("OpenGL ver.", nil), widget.NewButton("Update", nil))
+	manageZone := container.NewGridWithRows(2, startBtns, progress)
+
+	bottn := container.NewGridWithRows(2, widget.NewButton("START GAME", func() {startGameDirectX()}), manageZone)
+	mainWindow.SetContent(container.NewGridWithRows(2, img, bottn))
+
+
+	mainWindow.Show()
+	App.Settings().SetTheme(theme.DarkTheme())
+	App.Run()
 	
-	downloadNewClient()
+	/* downloadNewClient()
 	toTemp()
 	replaceTemp()
-	startGameDirectX()
+	startGameDirectX() */
 
 }
 
@@ -167,7 +208,7 @@ func unzip(src, dest string) error {
 func downloadNewClient() {
 	fileURL := "https://drive.google.com/u/0/uc?id=1AM9xNOXtM5ge0gnHPC5-UjpP-9TJfKil&export=download&confirm=no_antivirus"
 
-	fileName := "1233.zip"
+	fileName := "LF-Client.zip"
 
 	response, err := http.Get(fileURL)
 	if err != nil {
