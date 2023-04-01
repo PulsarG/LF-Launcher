@@ -33,6 +33,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/fyne/v2/theme"
+	"launch/resources"
 )
 
 func main() {
@@ -41,9 +42,13 @@ func main() {
 	mainWindow := App.NewWindow("LF Launcher")
 	mainWindow.Resize(fyne.NewSize(700,300))
 
-	img := canvas.NewImageFromFile("bg.jpg")
+	// img := canvas.NewImageFromFile("bg.jpg")
+	
+	
+    img := canvas.NewImageFromResource(fyne.NewStaticResource("bg.jpg", resources.ResourceBgJpg.StaticContent))
 
 	progress := widget.NewProgressBar()
+	progress.Hide()
 	startBtns := container.NewGridWithColumns(2, widget.NewButton("OpenGL ver.", nil), widget.NewButton("Update", nil))
 	manageZone := container.NewGridWithRows(2, startBtns, progress)
 
@@ -80,6 +85,26 @@ func startGameDirectX() {
 		fmt.Println("Ошибка при запуске приложения:", err)
 		return
 	}
+}
+
+func startGameOpenGl() {
+// получаем путь к текущей директории
+currentDir, err := os.Getwd()
+if err != nil {
+	fmt.Println("Ошибка при получении текущей директории:", err)
+	return
+}
+
+// собираем относительный путь к исполняемому файлу
+exePath := filepath.Join(currentDir, "LastFrontier_OpenGL.exe")
+
+// запускаем исполняемый файл
+cmd := exec.Command(exePath)
+err = cmd.Run()
+if err != nil {
+	fmt.Println("Ошибка при запуске приложения:", err)
+	return
+}
 }
 
 func replaceTemp() {
