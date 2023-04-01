@@ -49,7 +49,8 @@ func main() {
 	img := canvas.NewImageFromResource(fyne.NewStaticResource(data.IMG_NAME, resources.ResourceBgJpg.StaticContent))
 
 	// Прогрессбар с инфо-текстом
-	progressBar := widget.NewProgressBar()
+	progressBar := widget.NewProgressBarInfinite()
+	progressBar.Hide()
 	progressText := widget.NewLabel(data.PROGRESSBAR_TITLE_IDL)
 	stack := fyne.NewContainerWithLayout(layout.NewMaxLayout(),
 		progressBar,
@@ -75,14 +76,15 @@ func main() {
 
 }
 
-func startUpdate(progress *widget.ProgressBar, progressText *widget.Label, mainWindow *fyne.Window) {
+func startUpdate(progressBar *widget.ProgressBarInfinite, progressText *widget.Label, mainWindow *fyne.Window) {
 	wtColor := color.RGBA{255, 255, 255, 255}
 	title := canvas.NewText("Для успешного обновления необходимо минимум 2 ГБ свободного места", wtColor)
 	dialog.ShowCustomConfirm("Внимание", "Обновить", "Отмена", title, func(b bool) {
 		if b {
-			downloadNewClient(progress, progressText, mainWindow)
-			toTemp(progress, progressText, mainWindow)
-			replaceTemp(progress, progressText, mainWindow)
+			downloadNewClient(progressBar, progressText, mainWindow)
+			toTemp(progressText, mainWindow)
+			replaceTemp(progressText, mainWindow)
+			progressBar.Hide()
 			// startGameDirectX(mainWindow)
 		} // end if
 	}, *mainWindow) // end dialog
@@ -122,8 +124,8 @@ func startGameOpenGl(w *fyne.Window) {
 	}
 }
 
-func replaceTemp(progress *widget.ProgressBar, progressText *widget.Label, w *fyne.Window) {
-	progress.SetValue(0.7)
+func replaceTemp(progressText *widget.Label, w *fyne.Window) {
+	// progress.SetValue(0.7)
 	progressText.SetText(data.PROGRESSBAR_TITLE_TOEND)
 
 	dir, err := os.Getwd()
@@ -143,7 +145,7 @@ func replaceTemp(progress *widget.ProgressBar, progressText *widget.Label, w *fy
 	// удалить те, что не нужны
 	cleaningTemp(dir, tempDir, &files, w)
 
-	progress.SetValue(0.8)
+	// progress.SetValue(0.8)
 
 	// Перемещаем новые файлы клиента из temp
 	for _, file := range files {
@@ -163,14 +165,14 @@ func replaceTemp(progress *widget.ProgressBar, progressText *widget.Label, w *fy
 		}
 	} // end for
 
-	progress.SetValue(0.9)
+	// progress.SetValue(0.9)
 
 	err = os.RemoveAll(tempDir)
 	if err != nil {
 		showError("13", err, w)
 	}
 
-	progress.SetValue(1)
+	// progress.SetValue(1)
 	progressText.SetText(data.PROGRESSBAR_TITLE_END)
 }
 
@@ -187,8 +189,8 @@ func cleaningTemp(dir string, tempDir string, files *[]fs.FileInfo, w *fyne.Wind
 	} // end for
 }
 
-func toTemp(progress *widget.ProgressBar, progressText *widget.Label, w *fyne.Window) {
-	progress.SetValue(0.6)
+func toTemp(progressText *widget.Label, w *fyne.Window) {
+	// progress.SetValue(0.6)
 	progressText.SetText(data.PROGRESSBAR_TITLE_UNPACK)
 
 	dir, err := os.Getwd()
@@ -225,7 +227,7 @@ func toTemp(progress *widget.ProgressBar, progressText *widget.Label, w *fyne.Wi
 		showError("7", err, w)
 	}
 
-	progress.SetValue(0.7)
+	// progress.SetValue(0.7)
 }
 
 func unzip(src, dest string) error {
@@ -268,11 +270,9 @@ func unzip(src, dest string) error {
 	return nil
 }
 
-func downloadNewClient(progress *widget.ProgressBar, progressText *widget.Label, w *fyne.Window) {
-	// fileURL := data.FILE_URL
-	// fileName := data.NAME_ARCH
-
-	progress.SetValue(0)
+func downloadNewClient(progressBar *widget.ProgressBarInfinite, progressText *widget.Label, w *fyne.Window) {
+	// progress.SetValue(0)
+	progressBar.Show()
 	progressText.SetText(data.PROGRESSBAR_TITLE_DOWNLOAD)
 
 	response, err := http.Get(data.FILE_URL)
@@ -280,21 +280,21 @@ func downloadNewClient(progress *widget.ProgressBar, progressText *widget.Label,
 		showError("1", err, w)
 	}
 	defer response.Body.Close()
-	progress.SetValue(0.1)
+	// progress.SetValue(0.1)
 
 	file, err := os.Create(data.NAME_ARCH)
 	if err != nil {
 		showError("2", err, w)
 	}
 	defer file.Close()
-	progress.SetValue(0.3)
+	// progress.SetValue(0.3)
 
 	_, err = io.Copy(file, response.Body)
 	if err != nil {
 		showError("3", err, w)
 	}
 
-	progress.SetValue(0.5)
+	// progress.SetValue(0.5)
 }
 
 func showError(errText string, err error, w *fyne.Window) {
