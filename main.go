@@ -85,6 +85,8 @@ func startUpdate(progressBar *widget.ProgressBarInfinite, progressText *widget.L
 			toTemp(progressText, mainWindow)
 			replaceTemp(progressText, mainWindow)
 			progressBar.Hide()
+
+			// Автостарт после обновления
 			// startGameDirectX(mainWindow)
 		} // end if
 	}, *mainWindow) // end dialog
@@ -125,7 +127,6 @@ func startGameOpenGl(w *fyne.Window) {
 }
 
 func replaceTemp(progressText *widget.Label, w *fyne.Window) {
-	// progress.SetValue(0.7)
 	progressText.SetText(data.PROGRESSBAR_TITLE_TOEND)
 
 	dir, err := os.Getwd()
@@ -145,8 +146,6 @@ func replaceTemp(progressText *widget.Label, w *fyne.Window) {
 	// удалить те, что не нужны
 	cleaningTemp(dir, tempDir, &files, w)
 
-	// progress.SetValue(0.8)
-
 	// Перемещаем новые файлы клиента из temp
 	for _, file := range files {
 		src := filepath.Join(tempDir, file.Name())
@@ -165,14 +164,11 @@ func replaceTemp(progressText *widget.Label, w *fyne.Window) {
 		}
 	} // end for
 
-	// progress.SetValue(0.9)
-
 	err = os.RemoveAll(tempDir)
 	if err != nil {
 		showError("13", err, w)
 	}
 
-	// progress.SetValue(1)
 	progressText.SetText(data.PROGRESSBAR_TITLE_END)
 }
 
@@ -190,7 +186,6 @@ func cleaningTemp(dir string, tempDir string, files *[]fs.FileInfo, w *fyne.Wind
 }
 
 func toTemp(progressText *widget.Label, w *fyne.Window) {
-	// progress.SetValue(0.6)
 	progressText.SetText(data.PROGRESSBAR_TITLE_UNPACK)
 
 	dir, err := os.Getwd()
@@ -227,7 +222,6 @@ func toTemp(progressText *widget.Label, w *fyne.Window) {
 		showError("7", err, w)
 	}
 
-	// progress.SetValue(0.7)
 }
 
 func unzip(src, dest string) error {
@@ -271,7 +265,6 @@ func unzip(src, dest string) error {
 }
 
 func downloadNewClient(progressBar *widget.ProgressBarInfinite, progressText *widget.Label, w *fyne.Window) {
-	// progress.SetValue(0)
 	progressBar.Show()
 	progressText.SetText(data.PROGRESSBAR_TITLE_DOWNLOAD)
 
@@ -280,21 +273,18 @@ func downloadNewClient(progressBar *widget.ProgressBarInfinite, progressText *wi
 		showError("1", err, w)
 	}
 	defer response.Body.Close()
-	// progress.SetValue(0.1)
 
 	file, err := os.Create(data.NAME_ARCH)
 	if err != nil {
 		showError("2", err, w)
 	}
 	defer file.Close()
-	// progress.SetValue(0.3)
 
 	_, err = io.Copy(file, response.Body)
 	if err != nil {
 		showError("3", err, w)
 	}
 
-	// progress.SetValue(0.5)
 }
 
 func showError(errText string, err error, w *fyne.Window) {
