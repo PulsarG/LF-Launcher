@@ -5,7 +5,7 @@ const (
 
 	IMG_NAME = "bg.jpg"
 
-	FILE_URL = "https://drive.google.com/u/0/uc?id=1AM9xNOXtM5ge0gnHPC5-UjpP-9TJfKil&export=download&confirm=no_antivirus"
+	FILE_URL = " кref to download "
 	NAME_ARCH = "LF-Client.zip"
 	NAME_ARCH_OTHER = "LF-Client-PublicGame.zip"
 
