@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
 	"os"
 
 	// "log"
@@ -27,44 +28,52 @@ import (
 	"path/filepath"
 
 	// "fyne.io/fyne/app"
+	"launch/resources"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
-	"launch/resources"
+	"fyne.io/fyne/v2/widget"
 )
 
 func main() {
 
 	App := app.New()
 	mainWindow := App.NewWindow("LF Launcher")
-	mainWindow.Resize(fyne.NewSize(700,300))
+	mainWindow.Resize(fyne.NewSize(700, 270))
 
-	// img := canvas.NewImageFromFile("bg.jpg")
-	
-	
-    img := canvas.NewImageFromResource(fyne.NewStaticResource("bg.jpg", resources.ResourceBgJpg.StaticContent))
+	img := canvas.NewImageFromResource(fyne.NewStaticResource("bg.jpg", resources.ResourceBgJpg.StaticContent))
 
 	progress := widget.NewProgressBar()
-	progress.Hide()
-	startBtns := container.NewGridWithColumns(2, widget.NewButton("OpenGL ver.", nil), widget.NewButton("Update", nil))
-	manageZone := container.NewGridWithRows(2, startBtns, progress)
+	textLabel := widget.NewLabel("LastFrontier.ru...")
+	stack := fyne.NewContainerWithLayout(layout.NewMaxLayout(),
+		progress,
+		textLabel,
+	)
+	stack.Resize(fyne.NewSize(300, 50))
+	textLabel.Alignment = fyne.TextAlignCenter
+	progress.SetValue(0.5)
 
-	bottn := container.NewGridWithRows(2, widget.NewButton("START GAME", func() {startGameDirectX()}), manageZone)
+	startBtns := container.NewGridWithColumns(2, widget.NewButton("OpenGL ver.", func() { startGameOpenGl() }), widget.NewButton("Update", func() { startUpdate() }))
+	manageZone := container.NewGridWithRows(2, startBtns, stack)
+	bottn := container.NewGridWithRows(2, widget.NewButton("START GAME", func() { startGameDirectX() }), manageZone)
 	mainWindow.SetContent(container.NewGridWithRows(2, img, bottn))
-
 
 	mainWindow.Show()
 	App.Settings().SetTheme(theme.DarkTheme())
 	App.Run()
-	
+
+}
+
+func startUpdate() {
+	fmt.Println("Start Update")
 	/* downloadNewClient()
 	toTemp()
 	replaceTemp()
 	startGameDirectX() */
-
 }
 
 func startGameDirectX() {
@@ -88,23 +97,23 @@ func startGameDirectX() {
 }
 
 func startGameOpenGl() {
-// получаем путь к текущей директории
-currentDir, err := os.Getwd()
-if err != nil {
-	fmt.Println("Ошибка при получении текущей директории:", err)
-	return
-}
+	// получаем путь к текущей директории
+	currentDir, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Ошибка при получении текущей директории:", err)
+		return
+	}
 
-// собираем относительный путь к исполняемому файлу
-exePath := filepath.Join(currentDir, "LastFrontier_OpenGL.exe")
+	// собираем относительный путь к исполняемому файлу
+	exePath := filepath.Join(currentDir, "LastFrontier_OpenGL.exe")
 
-// запускаем исполняемый файл
-cmd := exec.Command(exePath)
-err = cmd.Run()
-if err != nil {
-	fmt.Println("Ошибка при запуске приложения:", err)
-	return
-}
+	// запускаем исполняемый файл
+	cmd := exec.Command(exePath)
+	err = cmd.Run()
+	if err != nil {
+		fmt.Println("Ошибка при запуске приложения:", err)
+		return
+	}
 }
 
 func replaceTemp() {
